@@ -2,9 +2,11 @@ using UnityEngine;
 using System.Collections;
 using System;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public enum GameState
 {
+    WaitingForChoice,
     WaitingForP1,
     WaitingForP2,
     Dragging,
@@ -27,6 +29,14 @@ public class GameManager : MonoBehaviour
     public static event Action<GameState> OnGameStateChanged;
     public static event Action OnScreenShake;
 
+    [Header("3 Seçenek (UI) Sistemi")]
+    public GameObject choicePanel; // Butonların içinde bulunduğu ana panel
+    public Button[] choiceButtons; // 3 adet butonumuz
+    private int[] currentChoices; // Ekrana gelen 3 parçanın indeksleri
+
+    [Header("Parça İkonları")]
+    public Sprite[] blockIcons; // Prefab dizisindeki sırayla aynı olacak resimler
+
     private void Awake()
     {
         Instance = this;
@@ -46,7 +56,7 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
         // Oyunu P1'in sırasıyla başlatıyoruz
-        ChangeState(GameState.WaitingForP1);
+        ChangeState(GameState.WaitingForChoice);
     }
 
     public void ChangeState(GameState newState)
@@ -60,12 +70,10 @@ public class GameManager : MonoBehaviour
         {
             case GameState.WaitingForP1:
                 currentPlayer = 1;
-                SpawnBlock();
                 break;
 
             case GameState.WaitingForP2:
                 currentPlayer = 2;
-                SpawnBlock();
                 break;
 
             case GameState.CheckingBalance:
@@ -75,6 +83,10 @@ public class GameManager : MonoBehaviour
 
             case GameState.GameOver:
                 Debug.Log("GAME OVER! Loser: Player " + currentPlayer);
+                break;
+
+            case GameState.WaitingForChoice:
+                PrepareChoices();
                 break;
         }
     }
@@ -116,15 +128,9 @@ public class GameManager : MonoBehaviour
             yield return new WaitForSeconds(0.1f);
         }
 
-        // Kule yıkılmadı ve tamamen durduysa sırayı diğer oyuncuya geçir
-        if (currentPlayer == 1)
-        {
-            ChangeState(GameState.WaitingForP2);
-        }
-        else
-        {
-            ChangeState(GameState.WaitingForP1);
-        }
+        // Kule yıkılmadıysa sırayı diğer oyuncuya geçir ve panel aç
+        currentPlayer = (currentPlayer == 1) ? 2 : 1; 
+        ChangeState(GameState.WaitingForChoice);
     }
 
     // KURŞUN GEÇİRMEZ SPAWN MANTIĞI
@@ -139,6 +145,56 @@ public class GameManager : MonoBehaviour
             // Objeyi doğrudan belirlediğimiz SpawnPoint'in tam merkezinde oluşturuyoruz!
             Instantiate(blockPrefabs[randomIndex], spawnPoint.position, spawnPoint.rotation);
         }
+    }
+
+    // Bu fonksiyon paneli açıp 3 butona rastgele parça atayacak
+    public void PrepareChoices()
+    {
+        choicePanel.SetActive(true); // Paneli görünür yap
+        currentChoices = new int[3];
+
+        for (int i = 0; i < 3; i++)
+        {
+            // 3 rastgele parça seç
+            int randomIndex = UnityEngine.Random.Range(0, blockPrefabs.Length);
+            currentChoices[i] = randomIndex;
+            
+            // Butonun eski tıklama görevlerini temizleyip yeni görevi atıyoruz
+            int buttonIndex = i; 
+            choiceButtons[i].onClick.RemoveAllListeners();
+            choiceButtons[i].onClick.AddListener(() => OnChoiceSelected(buttonIndex));
+            
+            // Ekstra: Eğer butonun içinde Text objesi varsa, parçanın ismini yazdırabilirsin
+            Text btnText = choiceButtons[i].GetComponentInChildren<Text>();
+            if(btnText != null) btnText.text = blockPrefabs[randomIndex].name;
+
+            // Butonun üzerindeki Image bileşenini bul ve resmi değiştir
+            Image btnImage = choiceButtons[i].GetComponent<Image>();
+            
+            // Eğer blockIcons dizisine resimleri koyduysak, butona o resmi ata
+            if(btnImage != null && blockIcons.Length > randomIndex)
+            {
+                btnImage.sprite = blockIcons[randomIndex];
+            }
+        }
+    }
+
+    // Butona tıklandığında çalışacak fonksiyon
+    public void OnChoiceSelected(int buttonIndex)
+    {
+        int selectedPrefabIndex = currentChoices[buttonIndex];
+        
+        choicePanel.SetActive(false); // Paneli gizle
+        
+        // Seçilen parçayı SpawnPoint merkezinde yarat
+        if (blockPrefabs.Length > 0 && spawnPoint != null)
+        {
+            Instantiate(blockPrefabs[selectedPrefabIndex], spawnPoint.position, spawnPoint.rotation);
+        }
+
+        // Parça doğduktan sonra oyuncunun tutması (Waiting) durumuna geç
+        if (currentPlayer == 1) ChangeState(GameState.WaitingForP1);
+        else ChangeState(GameState.WaitingForP2);
     }
 
     public void RestartGame()
