@@ -137,3 +137,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BlockController
   scrollRotationStep: 15
+  ghostMaterial: {fileID: 2100000, guid: 51afbcf4099a7ab4198de7b43e4809a3, type: 2}

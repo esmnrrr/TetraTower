@@ -13,6 +13,10 @@ public class BlockController : MonoBehaviour
     private float zDistanceToCamera;
     private Vector3 offset;
 
+    [Header("Ghost Önizleme")]
+    public Material ghostMaterial;
+    private GameObject ghostObj;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -43,6 +47,20 @@ public class BlockController : MonoBehaviour
                 transform.Rotate(0, 90f, 0, Space.World);
             }
         }
+
+        // Eğer parça taşınıyorsa ve hayalet varsa, onu aşağı yansıt
+        if (isDragging && ghostObj != null)
+        {
+            ghostObj.transform.rotation = transform.rotation; // Dönüşü eşitle
+
+            RaycastHit hit;
+            // Objeden dümdüz aşağıya doğru bir ışın gönderiyoruz
+            if (Physics.Raycast(transform.position, Vector3.down, out hit, 20f))
+            {
+                // Hayaleti ışının çarptığı yere (platforma veya kuleye) yerleştir
+                ghostObj.transform.position = hit.point;
+            }
+        }
     }
 
     void OnMouseDown()
@@ -59,6 +77,20 @@ public class BlockController : MonoBehaviour
         Vector3 mouseWorldPosition = Camera.main.ScreenToWorldPoint(mouseScreenPosition);
         
         offset = transform.position - mouseWorldPosition;
+
+        // Hayalet objeyi kendi kopyası olarak yarat
+        ghostObj = Instantiate(gameObject, transform.position, transform.rotation);
+        
+        // Hayaletin oyunun fiziğini ve kodlarını bozmasını engelle
+        Destroy(ghostObj.GetComponent<Rigidbody>());
+        Destroy(ghostObj.GetComponent<MeshCollider>());
+        Destroy(ghostObj.GetComponent<BlockController>());
+        
+        // Hayalete yarı saydam materyali ata
+        if (ghostObj.GetComponent<MeshRenderer>() != null)
+        {
+            ghostObj.GetComponent<MeshRenderer>().material = ghostMaterial;
+        }
     }
 
     void OnMouseDrag()
@@ -91,6 +123,8 @@ public class BlockController : MonoBehaviour
         {
             GameManager.Instance.ChangeState(GameState.CheckingBalance);
         }
+
+        if (ghostObj != null) Destroy(ghostObj); // Hayaleti yok et
     }
 
     // 3D Çarpışma Kontrolü (2D değil)
