@@ -128,12 +128,15 @@ public class BlockController : MonoBehaviour
     }
 
     // 3D Çarpışma Kontrolü (2D değil)
-    void OnCollisionEnter(Collision collision)
+    void OnTriggerEnter(Collider other)
     {
-        // Yere veya platforma sert çarptığında çıkacak ses veya efektleri buraya ekleyeceğiz
-        if (hasBeenPlaced && collision.relativeVelocity.magnitude > 1.5f)
+        // Eğer parça DeathZone'a değerse (masadan aşağı düşerse)
+        if (other.CompareTag("DeathZone"))
         {
-            Debug.Log("Çarpışma algılandı! Şiddet: " + collision.relativeVelocity.magnitude);
+            if (GameManager.Instance != null && GameManager.Instance.currentState != GameState.GameOver)
+            {
+                GameManager.Instance.ChangeState(GameState.GameOver);
+            }
         }
     }
 }

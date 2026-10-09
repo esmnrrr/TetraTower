@@ -55,6 +55,9 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+        Time.timeScale = 1f;
+        Time.fixedDeltaTime = 0.02f;
+        
         // Oyunu P1'in sırasıyla başlatıyoruz
         ChangeState(GameState.WaitingForChoice);
     }
@@ -82,7 +85,17 @@ public class GameManager : MonoBehaviour
                 break;
 
             case GameState.GameOver:
-                Debug.Log("GAME OVER! Loser: Player " + currentPlayer);
+                Debug.Log("KULE YIKILDI! Kaybeden: Oyuncu " + currentPlayer);
+                
+                // 1. Ekranı sars! (Eski kodundaki Observer tetikleyicisi)
+                TriggerShake();
+
+                // 2. Slow Motion (Yavaş Çekim) efekti - GDD'deki hissiyat hedefleri
+                Time.timeScale = 0.3f; 
+                Time.fixedDeltaTime = 0.02f * Time.timeScale; // Fizik motorunu da yavaşlatır
+                
+                // UI Paneli açıksa gizle
+                if(choicePanel != null) choicePanel.SetActive(false);
                 break;
 
             case GameState.WaitingForChoice:
