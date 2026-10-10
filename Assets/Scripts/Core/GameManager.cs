@@ -37,6 +37,10 @@ public class GameManager : MonoBehaviour
     [Header("Parça İkonları")]
     public Sprite[] blockIcons; // Prefab dizisindeki sırayla aynı olacak resimler
 
+    [Header("Oyun Sonu Arayüzü")]
+    public GameObject gameOverPanel;
+    public UnityEngine.UI.Text winnerText;
+
     private void Awake()
     {
         Instance = this;
@@ -87,12 +91,20 @@ public class GameManager : MonoBehaviour
             case GameState.GameOver:
                 Debug.Log("KULE YIKILDI! Kaybeden: Oyuncu " + currentPlayer);
                 
+                // KODU BURAYA EKLİYORUZ: Kule yıkıldığında paneli aç ve kazananı yazdır
+                if (gameOverPanel != null)
+                {
+                    gameOverPanel.SetActive(true);
+                    int winner = (currentPlayer == 1) ? 2 : 1; 
+                    if (winnerText != null) winnerText.text = "PLAYER " + winner + " WINS!";
+                }
+
                 // 1. Ekranı sars! (Eski kodundaki Observer tetikleyicisi)
                 TriggerShake();
 
-                // 2. Slow Motion (Yavaş Çekim) efekti - GDD'deki hissiyat hedefleri
+                // 2. Slow Motion (Yavaş Çekim) efekti
                 Time.timeScale = 0.3f; 
-                Time.fixedDeltaTime = 0.02f * Time.timeScale; // Fizik motorunu da yavaşlatır
+                Time.fixedDeltaTime = 0.02f * Time.timeScale; 
                 
                 // UI Paneli açıksa gizle
                 if(choicePanel != null) choicePanel.SetActive(false);
